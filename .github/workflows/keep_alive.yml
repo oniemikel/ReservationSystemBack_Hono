@@ -4,9 +4,8 @@ on:
   schedule:
     # 毎日午前9時（日本時間）に実行
     - cron: '0 0 * * *'
-  workflow_dispatch: # 手動実行も可能にする
+  workflow_dispatch: # 手動実行も可能
 
-# リポジトリへの書き込み権限を追加
 permissions:
   contents: write
 
@@ -14,21 +13,19 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      # リポジトリの履歴を更新するためにチェックアウトが必要
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Send a ping to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/keep_alive" \
-          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Content-Type: application/json"
+          curl -X POST "${SUPABASE_URL}/rest/v1/rpc/keep_alive" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json"
 
-      # 60日間の自動停止を防ぐための空コミットを追加
+      # 60日間の自動停止防止（フリーズせず数秒で完了するアクションを使用）
       - name: Keepalive Workflow
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit --allow-empty -m "keepalive: prevent GitHub Actions from sleeping"
-          git push
+        uses: gautamkrishnar/keepalive-workflow@v2
